@@ -4,22 +4,51 @@ const API_URL = 'https://apis.is/company?name=';
  * Leit að fyrirtækjum á Íslandi gegnum apis.is
  */
 const program = (() => {
-  let companiesSection;
+  let companies;
 
-  function init(companies) {
-    companiesSection = companies;
 
+  function displayError(error) {
+    const container = companies.querySelector('.results');
+
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+
+    container.appendChild(document.createTextNode(error));
   }
 
+  function fetchData(company) {
+    fetch(`${API_URL}${company}`)
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
 
-  function fetchData() {
-
+        throw new Error('Villa kom upp');
+      })
+      .then((data) => {
+        console.log(data.results);
+        displayCompany(data.results);
+      })
+      .catch((error) => {
+        displayError('Villa!');
+        console.error(error);
+      })
   }
 
-  function show() {
-    
+  function onSubmit(e) {
+    e.preventDefault();
+    const input = e.target.querySelector('input');
+
+    fetchData(input.value);
   }
 
+  function init(_companies) {
+    companies = _companies;
+
+    const form = companies.querySelector('form');
+    form.addEventListener('submit',onSubmit);
+  }
 
 
   // fengið úr fyrirlestri 11
