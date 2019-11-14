@@ -5,79 +5,7 @@ const API_URL = 'https://apis.is/company?name=';
  */
 const program = (() => {
   let companies;
-
-
-  function displayError(error) {
-    const container = companies.querySelector('.results');
-
-    while (container.firstChild) {
-      container.removeChild(container.firstChild);
-    }
-
-    container.appendChild(document.createTextNode(error));
-  }
-
-  function loadingGif() {
-    const container = companies.querySelector('.results');
-
-    while (container.firstChild) {
-      container.removeChild(container.firstChild);
-    }
-
-    const loadingElement = document.createElement('div');
-    loadingElement.classList.add('loading');
-    const loadingImage = document.createElement('img');
-    loadingImage.src = 'loading.gif';
-    const loadingText = document.createElement('p');
-    loadingText.innerHTML = 'Leita að fyrirtækjum...';
-
-    loadingElement.appendChild(loadingImage);
-    loadingElement.appendChild(loadingText);
-    container.appendChild(loadingElement);
-  }
-
-  function fetchData(company) {
-    fetch(`${API_URL}${company}`)
-      .then((response) => {
-        if (response.ok) {
-          return response.json();
-        }
-
-        throw new Error('Villa kom upp');
-      })
-      .then((data) => {
-        console.log(data.results);
-        displayCompany(data.results);
-      })
-      .catch((error) => {
-        displayError('Villa!');
-        console.error(error);
-      })
-  }
-
-  function onSubmit(e) {
-    e.preventDefault();
-    loadingGif();
-    const input = e.target.querySelector('input');
-
-    fetchData(input.value);
-  }
-
-  function init(_companies) {
-    companies = _companies;
-
-    const form = companies.querySelector('form');
-    form.addEventListener('submit', onSubmit);
-  }
-
-
-  // fengið úr fyrirlestri 11
-  function empty(el) {
-    while (el.firstChild) {
-      el.removeChild(el.firstChild);
-    }
-  }
-
+  const results = document.querySelector('.results');
 
   // fengið úr fyrirlestri 10
   function el(name, ...children) {
@@ -92,6 +20,87 @@ const program = (() => {
     return element;
   }
 
+  // fengið úr fyrirlestri 11
+  function empty(element) {
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+  }
+
+  function displayError(error) {
+    empty(results);
+    results.appendChild(document.createTextNode(error));
+  }
+
+  function displayCompany(companiesList) {
+    if (companiesList.length === 0) {
+      displayError('Fann ekki fyrirtæki');
+      return;
+    }
+
+    empty(results);
+
+    for (const item of companiesList) {
+      const makeList = results.appendChild(el('div', el('dl', el('dt', 'Nafn'), el('dd', item.name), el('dt', 'Kennitala'), el('dd', item.sn))));
+      if (item.active === 1) {
+        makeList.className = 'company company--active';
+      } else {
+        makeList.className = 'company company--inactive';
+      }
+    }
+  }
+
+  // Sækir loading.gif ef síða er lengi að loadast
+  function loadingGif() {
+    empty(results);
+
+    const loadingElement = document.createElement('div');
+    loadingElement.classList.add('loading');
+    const loadingImage = document.createElement('img');
+    loadingImage.src = 'loading.gif';
+    const loadingText = document.createElement('p');
+    loadingText.innerHTML = 'Leita að fyrirtækjum...';
+
+    loadingElement.appendChild(loadingImage);
+    loadingElement.appendChild(loadingText);
+    results.appendChild(loadingElement);
+  }
+
+  // Sækir upplýsingar af apis.is
+  function fetchData(company) {
+    fetch(`${API_URL}${company}`)
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Villa kom upp');
+      })
+      .then((data) => {
+        displayCompany(data.results);
+      })
+      .catch((error) => {
+        displayError('Villa við að sækja gögn');
+        console.error(error);
+      });
+  }
+
+  function onSubmit(e) {
+    e.preventDefault();
+    loadingGif();
+    const input = e.target.querySelector('input');
+    if (input.value.length === 0) {
+      displayError('Lén verður að vera strengur');
+    } else {
+      fetchData(input.value);
+    }
+  }
+
+  function init(_companies) {
+    companies = _companies;
+
+    const form = companies.querySelector('form');
+    form.addEventListener('submit', onSubmit);
+  }
 
   return {
     init,
